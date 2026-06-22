@@ -1,7 +1,4 @@
-/**
- * Middleware proprio de logging (criterio DW: "pelo menos um middleware implementado pelo aluno").
- * Loga metodo, URL, status e tempo de resposta em cada requisicao.
- */
+// loga metodo, URL, status e tempo de cada requisicao
 module.exports = function logger(req, res, next) {
     const inicio = process.hrtime.bigint()
 

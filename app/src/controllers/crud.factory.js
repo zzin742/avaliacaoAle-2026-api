@@ -1,7 +1,3 @@
-/**
- * Factory de controller CRUD generico — entrega as 5 rotas REST padroes
- * (list, get, create, update, delete) reusando logica.
- */
 module.exports = function crudFactory(Model, options = {}) {
     const include = options.include || []
     const attributes = options.attributes // permite { exclude: ['senha'] }

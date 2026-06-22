@@ -1,7 +1,3 @@
-/**
- * Entrypoint do servidor HTTP (Express).
- * Executado em producao via: node server.js
- */
 require('dotenv').config()
 const express = require('express')
 const swaggerUi = require('swagger-ui-express')

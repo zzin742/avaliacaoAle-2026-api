@@ -6,17 +6,11 @@ const auth = require('../controllers/auth.controller')
 
 const router = express.Router()
 
-// ============================================================
-// Rota publica (sem JWT)
-// ============================================================
+// rotas publicas
 router.post('/login', auth.login)
-
-// Healthcheck publico
 router.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }))
 
-// ============================================================
-// A partir daqui, todas as rotas exigem JWT
-// ============================================================
+// rotas autenticadas
 router.use(autenticarJWT)
 
 // ---- USUARIOS ----
