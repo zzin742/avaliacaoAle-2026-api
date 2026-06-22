@@ -14,13 +14,13 @@ Quatro serviços: `nginx`, `app`, `postgres`, `redis`. Todos com `restart: unles
 
 ## 2.3 Redes
 
-Duas redes custom bridge: `tcc_public` (só o Nginx) e `tcc_internal` (Nginx + app + postgres + redis). O app, Postgres e Redis não têm `ports:` mapeadas no host — apenas o Nginx expõe a porta 80.
+Duas redes custom bridge: `cursos_public` (só o Nginx) e `cursos_internal` (Nginx + app + postgres + redis). O app, Postgres e Redis não têm `ports:` mapeadas no host — apenas o Nginx expõe a porta 80.
 
 A comunicação entre containers usa o nome do serviço como DNS (`postgres:5432`, `redis:6379`), sem IPs estáticos.
 
 ## 2.4 Persistência
 
-Volumes nomeados `tcc_postgres_data` e `tcc_redis_data`. Os dados sobrevivem ao `docker compose down` e só são removidos com `docker compose down -v`.
+Volumes nomeados `cursos_postgres_data` e `cursos_redis_data`. Os dados sobrevivem ao `docker compose down` e só são removidos com `docker compose down -v`.
 
 ## Evidências (Seção 6 do guia)
 
@@ -34,7 +34,7 @@ Volumes nomeados `tcc_postgres_data` e `tcc_redis_data`. Os dados sobrevivem ao 
 
 ```bash
 docker compose ps
-docker network inspect tcc_internal
+docker network inspect cursos_internal
 docker compose exec app sh -c 'getent hosts postgres'
 ```
 
@@ -70,6 +70,6 @@ bash deploy.sh --seed
 |----------|------|-------------|
 | Eficiência da Imagem | 20% | Multi-stage + Alpine + `.dockerignore` + cache ordering |
 | Arquitetura de Rede | 25% | Custom bridge com DNS interno, banco sem acesso externo |
-| Persistência de Dados | 20% | Named volumes (`tcc_postgres_data`, `tcc_redis_data`) |
+| Persistência de Dados | 20% | Named volumes (`cursos_postgres_data`, `cursos_redis_data`) |
 | Segurança | 20% | Redes isoladas, usuário não-root no container, `.env` fora do repo |
 | Automação (CI/CD) | 15% | `deploy.sh` automatiza build, up, healthcheck e migrations |

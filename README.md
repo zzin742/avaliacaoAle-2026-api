@@ -57,11 +57,11 @@ O Dockerfile usa multi-stage build: o estágio `builder` instala as dependência
 
 **Persistência**
 
-Os dados do PostgreSQL ficam no volume nomeado `tcc_postgres_data` e os do Redis em `tcc_redis_data`. Os volumes sobrevivem ao `docker compose down` e só são removidos com `docker compose down -v`.
+Os dados do PostgreSQL ficam no volume nomeado `cursos_postgres_data` e os do Redis em `cursos_redis_data`. Os volumes sobrevivem ao `docker compose down` e só são removidos com `docker compose down -v`.
 
 **Rede e Comunicação**
 
-Duas redes custom bridge: `tcc_public` (só o Nginx) e `tcc_internal` (Nginx, app, postgres e redis). O app, o banco e o Redis não têm portas mapeadas no host. A comunicação entre containers é feita pelo nome do serviço (`postgres:5432`, `redis:6379`), sem IPs fixos.
+Duas redes custom bridge: `cursos_public` (só o Nginx) e `cursos_internal` (Nginx, app, postgres e redis). O app, o banco e o Redis não têm portas mapeadas no host. A comunicação entre containers é feita pelo nome do serviço (`postgres:5432`, `redis:6379`), sem IPs fixos.
 
 **Segurança**
 
@@ -92,7 +92,7 @@ docker compose ps
 curl http://localhost/health
 
 # Inspecionar rede interna
-docker network inspect tcc_internal
+docker network inspect cursos_internal
 
 # Provar que banco é inacessível do host
 curl --max-time 2 http://localhost:5432 || echo "inacessivel"

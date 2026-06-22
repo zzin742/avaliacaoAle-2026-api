@@ -56,13 +56,13 @@ Quando alguém faz `curl http://localhost/cursos` com um token JWT, isto acontec
         │
         │ Porta 80 do host (única porta exposta!)
         ▼
-2. NGINX (container tcc_nginx)
+2. NGINX (container cursos_nginx)
    - Recebe a requisição na porta 80
    - Vê a rota "/cursos" → faz proxy_pass http://app:3000/cursos
    - "app" é o nome do serviço, resolvido pelo DNS interno do Docker
         │
         ▼
-3. NODE.JS / EXPRESS (container tcc_app, porta 3000, sem exposição no host)
+3. NODE.JS / EXPRESS (container cursos_app, porta 3000, sem exposição no host)
    a) Middleware "log" → loga método, URL, timestamp
    b) Middleware "autenticarJWT" → verifica o token
       - Se inválido → retorna 401 e para tudo aqui
@@ -75,7 +75,7 @@ Quando alguém faz `curl http://localhost/cursos` com um token JWT, isto acontec
    - Abre conexão TCP com postgres:5432 (DNS interno)
         │
         ▼
-5. POSTGRESQL (container tcc_postgres, porta 5432, sem exposição no host)
+5. POSTGRESQL (container cursos_postgres, porta 5432, sem exposição no host)
    - Executa: SELECT * FROM cursos INNER JOIN categorias ... LIMIT 20
    - Usa os índices (cursos_categoria_idx, etc) pra ser rápido
    - Retorna os dados pro Sequelize
@@ -424,25 +424,25 @@ services:
 **O que cada serviço faz:**
 - **nginx** — porta de entrada. Recebe HTTP do host, faz proxy_pass pro `app`.
 - **app** — a aplicação Node.js. Fala com `postgres` e `redis` por DNS interno.
-- **postgres** — banco de dados. Volume `tcc_postgres_data` preserva os dados.
-- **redis** — cache em memória. Volume `tcc_redis_data` preserva (mesmo Redis, com `appendonly yes`, persiste).
+- **postgres** — banco de dados. Volume `cursos_postgres_data` preserva os dados.
+- **redis** — cache em memória. Volume `cursos_redis_data` preserva (mesmo Redis, com `appendonly yes`, persiste).
 
 ### 6.6 Custom Bridge Network — por que duas redes?
 
 ```yaml
 networks:
-  tcc_public:    # apenas nginx
-  tcc_internal:  # nginx + app + postgres + redis
+  cursos_public:    # apenas nginx
+  cursos_internal:  # nginx + app + postgres + redis
 ```
 
-- **`tcc_public`** — onde o Nginx escuta. Conectada ao host.
-- **`tcc_internal`** — rede isolada onde app/postgres/redis se comunicam.
+- **`cursos_public`** — onde o Nginx escuta. Conectada ao host.
+- **`cursos_internal`** — rede isolada onde app/postgres/redis se comunicam.
 
-Como o Postgres está **só na `tcc_internal`** e essa rede **não tem ponte com o host**, é fisicamente impossível alguém fora do Docker conectar nele. Isso é demonstrável: rodando `nc -zv localhost 5432` retorna "connection refused".
+Como o Postgres está **só na `cursos_internal`** e essa rede **não tem ponte com o host**, é fisicamente impossível alguém fora do Docker conectar nele. Isso é demonstrável: rodando `nc -zv localhost 5432` retorna "connection refused".
 
 ### 6.7 DNS interno do Docker
 
-Dentro da `tcc_internal`, cada container pode chamar os outros **pelo nome do serviço**:
+Dentro da `cursos_internal`, cada container pode chamar os outros **pelo nome do serviço**:
 
 ```javascript
 // dentro do app:
@@ -466,7 +466,7 @@ upstream node_app {
 | Tipo | Onde fica | Quando usar |
 |------|-----------|-------------|
 | **Bind Mount** | Pasta do host (ex: `./data:/var/lib/postgresql/data`) | Desenvolvimento — pra editar arquivos do host e ver dentro do container. Ruim pra produção (depende do filesystem do host). |
-| **Named Volume** | Gerenciado pelo Docker (`tcc_postgres_data`) | Produção — Docker decide onde guardar, otimiza, faz backup. Sobrevive a `docker compose down`. |
+| **Named Volume** | Gerenciado pelo Docker (`cursos_postgres_data`) | Produção — Docker decide onde guardar, otimiza, faz backup. Sobrevive a `docker compose down`. |
 
 **Usamos Named Volumes** porque atende o critério: "Bind mounts devem ser evitados para dados persistentes em produção". E o teste comprovou: rodamos `down` + `up` (sem `-v`) e os 31 usuários continuaram lá.
 
@@ -530,7 +530,7 @@ No `nginx.conf` tem `upstream node_app { server app:3000; }`. "app" é o nome do
 Porque ele não deve ser acessível do host. Sem `ports:`, ele só existe dentro da rede Docker, invisível pra qualquer um que não esteja em outro container conectado à mesma rede. Isso atende o critério "DB em rede isolada" e demonstramos isso com `nc -zv localhost 5432` que falha.
 
 **"O que é Named Volume?"**
-É um volume Docker gerenciado, com nome (`tcc_postgres_data`), que sobrevive a `docker compose down`. Os dados ficam num diretório administrado pelo Docker, em vez de num caminho do host. Vantagem: portabilidade e melhor performance.
+É um volume Docker gerenciado, com nome (`cursos_postgres_data`), que sobrevive a `docker compose down`. Os dados ficam num diretório administrado pelo Docker, em vez de num caminho do host. Vantagem: portabilidade e melhor performance.
 
 **"O que aconteceria se vocês rodassem `docker compose down -v`?"**
 A flag `-v` apaga os volumes. Perderíamos todos os dados do banco. É **muito diferente** de `docker compose down` sem `-v`, que só para os containers preservando dados.
@@ -571,7 +571,7 @@ docker compose ps
 
 # 4. Mostrar as redes
 docker network ls | grep tcc
-docker network inspect tcc_internal --format '{{range .Containers}}{{.Name}} {{end}}'
+docker network inspect cursos_internal --format '{{range .Containers}}{{.Name}} {{end}}'
 
 # 5. Provar isolamento (essas 3 devem FALHAR)
 nc -zv localhost 5432  # postgres

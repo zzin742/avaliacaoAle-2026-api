@@ -3,7 +3,7 @@ name: cursos-api
 services:
   nginx:
     image: nginx:1.27-alpine
-    container_name: tcc_nginx
+    container_name: cursos_nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -13,14 +13,14 @@ services:
       app:
         condition: service_healthy
     networks:
-      - tcc_public
-      - tcc_internal
+      - cursos_public
+      - cursos_internal
 
   app:
     build:
       context: ./app
       dockerfile: Dockerfile
-    container_name: tcc_app
+    container_name: cursos_app
     restart: unless-stopped
     env_file:
       - ./app/.env
@@ -32,12 +32,11 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - tcc_internal
-    # NOTA: nao expoe portas no host — apenas Nginx fala com a aplicacao
+      - cursos_internal
 
   postgres:
     image: postgres:17-alpine
-    container_name: tcc_postgres
+    container_name: cursos_postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-cursos_db}
@@ -51,12 +50,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - tcc_internal
-    # NOTA: nao expoe portas no host — banco fica isolado na rede interna
+      - cursos_internal
 
   redis:
     image: redis:7-alpine
-    container_name: tcc_redis
+    container_name: cursos_redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
@@ -67,22 +65,18 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - tcc_internal
+      - cursos_internal
 
 networks:
-  # Rede publica: apenas o Nginx tem acesso externo
-  tcc_public:
+  cursos_public:
     driver: bridge
-    name: tcc_public
-
-  # Rede interna isolada: app + postgres + redis (sem acesso externo)
-  tcc_internal:
+    name: cursos_public
+  cursos_internal:
     driver: bridge
-    name: tcc_internal
-    internal: false  # mantem false pra app conseguir baixar dependencias durante build inicial
+    name: cursos_internal
 
 volumes:
   postgres_data:
-    name: tcc_postgres_data
+    name: cursos_postgres_data
   redis_data:
-    name: tcc_redis_data
+    name: cursos_redis_data
