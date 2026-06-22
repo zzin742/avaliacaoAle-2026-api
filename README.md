@@ -9,7 +9,7 @@ Avaliação Prática do 2º Bimestre 2026 — UniFAAT — Análise e Desenvolvim
 | RA | Nome |
 |----|------|
 | 3225002 | José Henrique Teixeira Luiz |
-| 632572 | Leandro Duarte Gulias |
+| 6325072 | Leandro Duarte Gulias |
 | 6322006 | Rafael Nogueira Maruca |
 
 ## Sobre o projeto

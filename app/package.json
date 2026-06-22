@@ -1,5 +1,5 @@
 {
-  "name": "tcc-2026-cursos-api",
+  "name": "cursos-api",
   "version": "1.0.0",
   "description": "API REST de Plataforma de Cursos Online - Avaliacao Pratica 2 Bimestre 2026 (DW + BD + Infra)",
   "main": "server.js",
