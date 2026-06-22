@@ -84,22 +84,31 @@ O `.env` na raiz define as credenciais do PostgreSQL usadas pelo `docker-compose
 
 URL de acesso: `http://localhost`
 
+A forma mais direta de ver o isolamento é o `docker compose ps`. Só o nginx mostra `0.0.0.0:80->80`. Postgres, redis e app aparecem só com a porta interna (ex: `5432/tcp`), sem `0.0.0.0` na frente — ou seja, não estão expostos no host.
+
 ```bash
-# Status dos containers
 docker compose ps
-
-# Healthcheck da API
 curl http://localhost/health
-
-# Inspecionar rede interna
 docker network inspect cursos_internal
-
-# Provar que banco é inacessível do host
-curl --max-time 2 http://localhost:5432 || echo "inacessivel"
-
-# Swagger
-# http://localhost/api-docs
 ```
+
+Para tentar acessar o banco direto do host (deve falhar):
+
+No Git Bash, Linux ou Mac:
+
+```bash
+curl -s --max-time 2 http://localhost:5432 || echo "POSTGRES inacessivel do host (correto)"
+```
+
+No PowerShell (Windows):
+
+```powershell
+Test-NetConnection localhost -Port 5432 -InformationLevel Quiet
+```
+
+O retorno `False` no PowerShell significa que a porta está fechada — que é o esperado.
+
+Swagger: `http://localhost/api-docs`
 
 ## Documentação por disciplina
 
@@ -117,5 +126,5 @@ Para limpar tudo após a avaliação:
 
 ```bash
 docker compose down -v
-docker image rm tcc-2026-app
+docker image rm cursos-api-app
 ```

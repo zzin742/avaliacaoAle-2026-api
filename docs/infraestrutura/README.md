@@ -40,12 +40,24 @@ docker compose exec app sh -c 'getent hosts postgres'
 
 ### Isolamento de rede
 
+No Git Bash, Linux ou Mac:
+
 ```bash
-curl --max-time 2 http://localhost:5432 || echo "postgres inacessivel do host"
-curl --max-time 2 http://localhost:6379 || echo "redis inacessivel do host"
-curl --max-time 2 http://localhost:3000 || echo "node inacessivel do host"
+curl -s --max-time 2 http://localhost:5432 || echo "postgres inacessivel do host"
+curl -s --max-time 2 http://localhost:6379 || echo "redis inacessivel do host"
+curl -s --max-time 2 http://localhost:3000 || echo "node inacessivel do host"
 curl http://localhost/health
 ```
+
+No PowerShell (Windows):
+
+```powershell
+Test-NetConnection localhost -Port 5432 -InformationLevel Quiet
+Test-NetConnection localhost -Port 6379 -InformationLevel Quiet
+Test-NetConnection localhost -Port 3000 -InformationLevel Quiet
+```
+
+Retorno `False` indica que a porta está fechada no host — comportamento esperado.
 
 ### Persistência
 
