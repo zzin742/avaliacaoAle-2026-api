@@ -122,7 +122,7 @@ Esse `.env` sobrescreve as senhas do PostgreSQL e o segredo do JWT tanto para o 
 
 URL de acesso: `http://localhost`
 
-A forma mais direta de ver o isolamento é o `docker compose ps`. Só o nginx mostra `0.0.0.0:80->80`. Postgres, redis e app aparecem só com a porta interna (ex: `5432/tcp`), sem `0.0.0.0` na frente — ou seja, não estão expostos no host.
+A forma mais direta de ver o isolamento é o `docker compose ps`. Só o nginx é exposto no host (`0.0.0.0:80->80` e, opcionalmente, `0.0.0.0:443->443`). Postgres, redis e app aparecem só com a porta interna (ex: `5432/tcp`), sem `0.0.0.0` na frente — ou seja, não estão expostos no host.
 
 ```bash
 docker compose ps
