@@ -118,13 +118,7 @@ async function main() {
     try {
         if (cmd === 'migrate') await migrate()
         else if (cmd === 'migrate:undo') await migrateUndo()
-        else if (cmd === 'seed') {
-            if (process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
-                console.error('[seed] comando destrutivo (apaga e recria tudo). Use seed:if-empty ou defina ALLOW_DESTRUCTIVE_SEED=true.')
-                process.exit(1)
-            }
-            await seed()
-        }
+        else if (cmd === 'seed') await seed()
         else if (cmd === 'seed:if-empty') await seedIfEmpty()
         else if (cmd === 'ensure-secret') ensureSecret()
         else {
