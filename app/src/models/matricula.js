@@ -25,9 +25,12 @@ module.exports = (sequelize) => {
                 defaultValue: DataTypes.NOW,
             },
             status: {
-                type: DataTypes.ENUM('ativa', 'concluida', 'cancelada'),
+                // VARCHAR + CHECK no banco (definido na migration).
+                // Validacao adicional no app via isIn.
+                type: DataTypes.STRING(20),
                 allowNull: false,
                 defaultValue: 'ativa',
+                validate: { isIn: [['ativa', 'concluida', 'cancelada']] },
             },
             progresso: {
                 type: DataTypes.INTEGER,

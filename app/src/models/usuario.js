@@ -22,14 +22,19 @@ module.exports = (sequelize) => {
                 validate: { isEmail: true, notEmpty: true },
             },
             senha: {
-                type: DataTypes.STRING(255),
+                // bcrypt gera 60 chars fixos; 72 cobre prefixos. Migration
+                // alinhada (era 255, dispensavel — desperdicio de bytes).
+                type: DataTypes.STRING(72),
                 allowNull: false,
-                validate: { notEmpty: true, len: [6, 255] },
+                validate: { notEmpty: true, len: [6, 72] },
             },
             tipo: {
-                type: DataTypes.ENUM('aluno', 'admin'),
+                // VARCHAR + CHECK no banco (definido na migration). Aqui no
+                // model usamos STRING + validate.isIn pra validar via app.
+                type: DataTypes.STRING(20),
                 allowNull: false,
                 defaultValue: 'aluno',
+                validate: { isIn: [['aluno', 'admin']] },
             },
         },
         {

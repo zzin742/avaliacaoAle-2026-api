@@ -1,7 +1,8 @@
 module.exports = {
     name: '003_create_cursos',
 
-    async up(queryInterface, Sequelize) {
+    async up(queryInterface, Sequelize, options = {}) {
+        const { transaction } = options
         await queryInterface.createTable('cursos', {
             id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
             titulo: { type: Sequelize.STRING(160), allowNull: false },
@@ -18,13 +19,14 @@ module.exports = {
             ativo: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
             created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
             updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
-        })
-        await queryInterface.addIndex('cursos', ['categoria_id'], { name: 'cursos_categoria_idx' })
-        await queryInterface.addIndex('cursos', ['titulo'], { name: 'cursos_titulo_idx' })
-        await queryInterface.addIndex('cursos', ['ativo'], { name: 'cursos_ativo_idx' })
+        }, { transaction })
+        await queryInterface.addIndex('cursos', ['categoria_id'], { name: 'cursos_categoria_idx', transaction })
+        await queryInterface.addIndex('cursos', ['titulo'], { name: 'cursos_titulo_idx', transaction })
+        await queryInterface.addIndex('cursos', ['ativo'], { name: 'cursos_ativo_idx', transaction })
     },
 
-    async down(queryInterface) {
-        await queryInterface.dropTable('cursos')
+    async down(queryInterface, Sequelize, options = {}) {
+        const { transaction } = options
+        await queryInterface.dropTable('cursos', { transaction })
     },
 }

@@ -77,121 +77,127 @@ module.exports = async function seed() {
     // O schema e criado pelas migrations (node command.js migrate).
     // O seed apenas popula os dados — nao define schema.
 
-    // ---- Limpar tabelas (na ordem inversa das FKs) ----
-    await Avaliacao.destroy({ where: {} })
-    await Matricula.destroy({ where: {} })
-    await Curso.destroy({ where: {} })
-    await Categoria.destroy({ where: {} })
-    await Usuario.destroy({ where: {} })
+    // TUDO em uma unica transacao: se qualquer passo falhar, o banco volta
+    // ao estado anterior. Sem isso, uma falha no meio (ex: erro em matriculas)
+    // deixava o banco com usuarios+categorias+cursos OK e o resto faltando —
+    // e o seed:if-empty NUNCA mais tentaria (porque ja "tem usuarios").
+    const totais = await sequelize.transaction(async (t) => {
+        // ---- Limpar tabelas (na ordem inversa das FKs) ----
+        await Avaliacao.destroy({ where: {}, transaction: t })
+        await Matricula.destroy({ where: {}, transaction: t })
+        await Curso.destroy({ where: {}, transaction: t })
+        await Categoria.destroy({ where: {}, transaction: t })
+        await Usuario.destroy({ where: {}, transaction: t })
 
-    // Resetar sequencias (Postgres)
-    await sequelize.query(`
-        ALTER SEQUENCE usuarios_id_seq RESTART WITH 1;
-        ALTER SEQUENCE categorias_id_seq RESTART WITH 1;
-        ALTER SEQUENCE cursos_id_seq RESTART WITH 1;
-        ALTER SEQUENCE matriculas_id_seq RESTART WITH 1;
-        ALTER SEQUENCE avaliacoes_id_seq RESTART WITH 1;
-    `)
+        // Resetar sequencias (Postgres). RESTART nao pode rodar dentro de
+        // transacao em algumas versoes — usamos ALTER que e transacional.
+        await sequelize.query(`ALTER SEQUENCE usuarios_id_seq RESTART WITH 1`, { transaction: t })
+        await sequelize.query(`ALTER SEQUENCE categorias_id_seq RESTART WITH 1`, { transaction: t })
+        await sequelize.query(`ALTER SEQUENCE cursos_id_seq RESTART WITH 1`, { transaction: t })
+        await sequelize.query(`ALTER SEQUENCE matriculas_id_seq RESTART WITH 1`, { transaction: t })
+        await sequelize.query(`ALTER SEQUENCE avaliacoes_id_seq RESTART WITH 1`, { transaction: t })
 
-    // ---- USUARIOS ----
-    console.log('[seed] criando 30 usuarios...')
-    const usuarios = []
-    // 1 admin fixo
-    usuarios.push(await Usuario.create({
-        nome: 'Administrador',
-        email: 'admin@cursos.com',
-        senha: 'admin123',
-        tipo: 'admin',
-    }))
-    // 29 alunos
-    for (let i = 0; i < 29; i++) {
-        const nome = NOMES[i % NOMES.length]
-        const emailBase = nome.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z.]/g, '')
-        const u = await Usuario.create({
-            nome,
-            email: `${emailBase}${i + 1}@cursos.com`,
-            senha: 'senha123',
-            tipo: 'aluno',
-        })
-        usuarios.push(u)
-    }
+        // ---- USUARIOS ----
+        console.log('[seed] criando 30 usuarios...')
+        const usuarios = []
+        // 1 admin fixo
+        usuarios.push(await Usuario.create({
+            nome: 'Administrador',
+            email: 'admin@cursos.com',
+            senha: 'admin123',
+            tipo: 'admin',
+        }, { transaction: t }))
+        // 29 alunos
+        for (let i = 0; i < 29; i++) {
+            const nome = NOMES[i % NOMES.length]
+            const emailBase = nome.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z.]/g, '')
+            const u = await Usuario.create({
+                nome,
+                email: `${emailBase}${i + 1}@cursos.com`,
+                senha: 'senha123',
+                tipo: 'aluno',
+            }, { transaction: t })
+            usuarios.push(u)
+        }
 
-    // ---- CATEGORIAS ----
-    console.log('[seed] criando 8 categorias...')
-    const categorias = await Categoria.bulkCreate(CATEGORIAS)
-    const catByName = Object.fromEntries(categorias.map((c) => [c.nome, c]))
+        // ---- CATEGORIAS ----
+        console.log('[seed] criando 8 categorias...')
+        const categorias = await Categoria.bulkCreate(CATEGORIAS, { transaction: t })
+        const catByName = Object.fromEntries(categorias.map((c) => [c.nome, c]))
 
-    // ---- CURSOS ----
-    console.log('[seed] criando 25 cursos...')
-    const cursos = []
-    for (const c of CURSOS_BASE) {
-        const curso = await Curso.create({
-            titulo: c.titulo,
-            descricao: `Curso completo de ${c.titulo}, com ${c.ch}h de conteúdo prático e exercícios.`,
-            carga_horaria: c.ch,
-            preco: c.preco,
-            categoria_id: catByName[c.cat].id,
-            ativo: true,
-        })
-        cursos.push(curso)
-    }
+        // ---- CURSOS ----
+        console.log('[seed] criando 25 cursos...')
+        const cursos = []
+        for (const c of CURSOS_BASE) {
+            const curso = await Curso.create({
+                titulo: c.titulo,
+                descricao: `Curso completo de ${c.titulo}, com ${c.ch}h de conteúdo prático e exercícios.`,
+                carga_horaria: c.ch,
+                preco: c.preco,
+                categoria_id: catByName[c.cat].id,
+                ativo: true,
+            }, { transaction: t })
+            cursos.push(curso)
+        }
 
-    // ---- MATRICULAS (80, distribuidas) ----
-    console.log('[seed] criando 80 matriculas...')
-    const matriculaSet = new Set()
-    let matriculasCriadas = 0
-    while (matriculasCriadas < 80) {
-        const u = rand(usuarios.slice(1)) // sem o admin
-        const c = rand(cursos)
-        const key = `${u.id}-${c.id}`
-        if (matriculaSet.has(key)) continue
-        matriculaSet.add(key)
+        // ---- MATRICULAS (80, distribuidas) ----
+        console.log('[seed] criando 80 matriculas...')
+        const matriculaSet = new Set()
+        let matriculasCriadas = 0
+        while (matriculasCriadas < 80) {
+            const u = rand(usuarios.slice(1)) // sem o admin
+            const c = rand(cursos)
+            const key = `${u.id}-${c.id}`
+            if (matriculaSet.has(key)) continue
+            matriculaSet.add(key)
 
-        const status = rand(['ativa', 'ativa', 'ativa', 'concluida', 'cancelada'])
-        const progresso = status === 'concluida' ? 100 : status === 'cancelada' ? randInt(0, 50) : randInt(0, 99)
-        const dataMatricula = new Date(Date.now() - randInt(0, 180) * 24 * 60 * 60 * 1000)
+            const status = rand(['ativa', 'ativa', 'ativa', 'concluida', 'cancelada'])
+            const progresso = status === 'concluida' ? 100 : status === 'cancelada' ? randInt(0, 50) : randInt(0, 99)
+            const dataMatricula = new Date(Date.now() - randInt(0, 180) * 24 * 60 * 60 * 1000)
 
-        await Matricula.create({
-            usuario_id: u.id,
-            curso_id: c.id,
-            status,
-            progresso,
-            data_matricula: dataMatricula,
-        })
-        matriculasCriadas++
-    }
+            await Matricula.create({
+                usuario_id: u.id,
+                curso_id: c.id,
+                status,
+                progresso,
+                data_matricula: dataMatricula,
+            }, { transaction: t })
+            matriculasCriadas++
+        }
 
-    // ---- AVALIACOES (60, apenas de matriculas nao canceladas) ----
-    console.log('[seed] criando 60 avaliacoes...')
-    const matriculas = (await Matricula.findAll()).filter((m) => m.status !== 'cancelada')
-    const avaliacaoSet = new Set()
-    let avaliacoesCriadas = 0
-    let tentativas = 0
-    while (avaliacoesCriadas < 60 && tentativas < 200) {
-        tentativas++
-        const m = rand(matriculas)
-        const key = `${m.usuario_id}-${m.curso_id}`
-        if (avaliacaoSet.has(key)) continue
-        avaliacaoSet.add(key)
+        // ---- AVALIACOES (60, apenas de matriculas nao canceladas) ----
+        console.log('[seed] criando 60 avaliacoes...')
+        const matriculas = (await Matricula.findAll({ transaction: t })).filter((m) => m.status !== 'cancelada')
+        const avaliacaoSet = new Set()
+        let avaliacoesCriadas = 0
+        let tentativas = 0
+        while (avaliacoesCriadas < 60 && tentativas < 200) {
+            tentativas++
+            const m = rand(matriculas)
+            const key = `${m.usuario_id}-${m.curso_id}`
+            if (avaliacaoSet.has(key)) continue
+            avaliacaoSet.add(key)
 
-        // Notas tendem a ser positivas (4-5 mais comuns)
-        const nota = rand([3, 3, 4, 4, 4, 5, 5, 5, 5, 2, 1])
-        await Avaliacao.create({
-            usuario_id: m.usuario_id,
-            curso_id: m.curso_id,
-            nota,
-            comentario: rand(COMENTARIOS),
-        })
-        avaliacoesCriadas++
-    }
+            // Notas tendem a ser positivas (4-5 mais comuns)
+            const nota = rand([3, 3, 4, 4, 4, 5, 5, 5, 5, 2, 1])
+            await Avaliacao.create({
+                usuario_id: m.usuario_id,
+                curso_id: m.curso_id,
+                nota,
+                comentario: rand(COMENTARIOS),
+            }, { transaction: t })
+            avaliacoesCriadas++
+        }
 
-    const totais = {
-        usuarios: await Usuario.count(),
-        categorias: await Categoria.count(),
-        cursos: await Curso.count(),
-        matriculas: await Matricula.count(),
-        avaliacoes: await Avaliacao.count(),
-    }
+        return {
+            usuarios: await Usuario.count({ transaction: t }),
+            categorias: await Categoria.count({ transaction: t }),
+            cursos: await Curso.count({ transaction: t }),
+            matriculas: await Matricula.count({ transaction: t }),
+            avaliacoes: await Avaliacao.count({ transaction: t }),
+        }
+    })
+
     const total = Object.values(totais).reduce((a, b) => a + b, 0)
     console.log('\n[seed] CONCLUIDO:', totais, `(TOTAL: ${total} registros)`)
     console.log('[seed] credenciais admin: admin@cursos.com / admin123')

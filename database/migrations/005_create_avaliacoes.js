@@ -1,7 +1,8 @@
 module.exports = {
     name: '005_create_avaliacoes',
 
-    async up(queryInterface, Sequelize) {
+    async up(queryInterface, Sequelize, options = {}) {
+        const { transaction } = options
         await queryInterface.createTable('avaliacoes', {
             id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
             usuario_id: {
@@ -22,23 +23,26 @@ module.exports = {
             comentario: { type: Sequelize.TEXT, allowNull: true },
             created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
             updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
-        })
+        }, { transaction })
 
-        await queryInterface.addIndex('avaliacoes', ['usuario_id'], { name: 'avaliacoes_usuario_idx' })
-        await queryInterface.addIndex('avaliacoes', ['curso_id'], { name: 'avaliacoes_curso_idx' })
+        // avaliacoes_usuario_idx REMOVIDO: indice composto
+        // uniq_avaliacao_usuario_curso cobre buscas por usuario_id (B-tree prefix).
+        await queryInterface.addIndex('avaliacoes', ['curso_id'], { name: 'avaliacoes_curso_idx', transaction })
         await queryInterface.addIndex('avaliacoes', ['usuario_id', 'curso_id'], {
             unique: true,
             name: 'uniq_avaliacao_usuario_curso',
+            transaction,
         })
-        await queryInterface.addIndex('avaliacoes', ['nota'], { name: 'avaliacoes_nota_idx' })
+        await queryInterface.addIndex('avaliacoes', ['nota'], { name: 'avaliacoes_nota_idx', transaction })
 
-        await queryInterface.sequelize.query(`
-            ALTER TABLE avaliacoes
-            ADD CONSTRAINT chk_avaliacoes_nota CHECK (nota BETWEEN 1 AND 5)
-        `)
+        await queryInterface.sequelize.query(
+            `ALTER TABLE avaliacoes ADD CONSTRAINT chk_avaliacoes_nota CHECK (nota BETWEEN 1 AND 5)`,
+            { transaction },
+        )
     },
 
-    async down(queryInterface) {
-        await queryInterface.dropTable('avaliacoes')
+    async down(queryInterface, Sequelize, options = {}) {
+        const { transaction } = options
+        await queryInterface.dropTable('avaliacoes', { transaction })
     },
 }
