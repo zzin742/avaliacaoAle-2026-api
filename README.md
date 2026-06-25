@@ -68,7 +68,31 @@ A resposta traz `{ "token": "...", "usuario": {...} }`. Use o token no cabeçalh
 curl http://localhost/cursos -H "Authorization: Bearer SEU_TOKEN_AQUI"
 ```
 
-Sem o token, a API responde `401 Token nao fornecido`.
+Sem o token, a API responde `401 Token nao fornecido` — isso **NÃO é um bug**, é a proteção JWT funcionando. O `Invoke-WebRequest` do PowerShell lança exceção em qualquer status diferente de 2xx, então o `401` aparece como erro vermelho no terminal, mas é o comportamento esperado.
+
+### Teste rápido (Windows / PowerShell)
+
+Com os containers no ar (`docker compose up -d`), rode o script de teste incluído:
+
+```powershell
+.\test.ps1
+```
+
+Ele faz health check, login, lista cursos com o token e demonstra que o `401` sem token é esperado.
+
+### Rota pública de health
+
+Para validar se a API está no ar sem precisar de token, use a rota `/health`:
+
+```bash
+curl http://localhost/health
+```
+
+Resposta esperada (HTTP 200):
+
+```json
+{ "status": "ok", "uptime": 12.3, "checks": { "app": "ok", "db": "ok", "cache": "ok" } }
+```
 
 As rotas de leitura (`GET`) ficam disponíveis para qualquer usuário autenticado. Já as escritas administrativas — criar, editar e remover `usuarios`, `categorias` e `cursos` — exigem um usuário do tipo `admin`; um `aluno` recebe `403`. Matrículas e avaliações podem ser criadas pelo próprio usuário autenticado.
 
