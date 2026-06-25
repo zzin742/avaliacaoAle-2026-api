@@ -3,7 +3,7 @@
 const path = require('node:path')
 const sequelize = require('../src/config/database')
 
-const MIGRATIONS_DIR = path.join(__dirname, '..', 'src', 'migrations')
+const MIGRATIONS_DIR = path.join(__dirname, '..', 'database', 'migrations')
 
 module.exports = {
     name: 'migrate:undo',

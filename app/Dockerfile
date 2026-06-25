@@ -8,7 +8,7 @@ FROM node:24-alpine AS builder
 WORKDIR /build
 
 # Camada menos mutavel: copia apenas package.json + lock pra explorar cache
-COPY package.json package-lock.json* ./
+COPY app/package.json app/package-lock.json* ./
 
 # Instala apenas dependencias de producao
 RUN npm install --omit=dev --no-audit --no-fund && \
@@ -27,8 +27,11 @@ WORKDIR /app
 # Copia node_modules ja instalado do estagio de build
 COPY --from=builder --chown=app:app /build/node_modules ./node_modules
 
-# Copia o codigo-fonte (camada mais mutavel - vem por ultimo)
-COPY --chown=app:app . .
+# Copia o codigo da aplicacao (pasta app/) preservando estrutura interna
+COPY --chown=app:app app/ ./
+
+# Copia migrations e seeds (estao na raiz, fora de app/, seguindo padrao do prof Luan)
+COPY --chown=app:app database/ ./database/
 
 # Diretorio onde o segredo do JWT e persistido (montado como volume).
 # Criado com dono app para o usuario nao-root conseguir escrever.

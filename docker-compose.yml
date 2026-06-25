@@ -32,8 +32,8 @@ services:
   # roda uma vez (migrate + seed inicial + gera o segredo do jwt) e encerra
   migrate:
     build:
-      context: ./app
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: app/Dockerfile
     environment: *app-env
     command: ["sh", "-c", "for i in 1 2 3 4 5; do node command.js migrate && node command.js seed:if-empty && node command.js ensure-secret && exit 0; echo \"migrate tentativa $$i falhou, retry em 3s\"; sleep 3; done; echo 'migrate falhou apos 5 tentativas'; exit 1"]
     depends_on:
@@ -47,8 +47,8 @@ services:
 
   app:
     build:
-      context: ./app
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: app/Dockerfile
     restart: unless-stopped
     environment: *app-env
     depends_on:

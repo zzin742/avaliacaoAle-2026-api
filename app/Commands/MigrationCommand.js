@@ -5,7 +5,7 @@ const path = require('node:path')
 const fs = require('node:fs')
 const sequelize = require('../src/config/database')
 
-const MIGRATIONS_DIR = path.join(__dirname, '..', 'src', 'migrations')
+const MIGRATIONS_DIR = path.join(__dirname, '..', 'database', 'migrations')
 
 async function ensureMigrationsTable() {
     await sequelize.query(`

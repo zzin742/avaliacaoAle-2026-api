@@ -2,7 +2,9 @@
  * Seed completo com 100+ registros realistas para a Avaliacao Pratica.
  * Total: 30 usuarios + 8 categorias + 25 cursos + 80 matriculas + 60 avaliacoes = 203 registros.
  */
-const { Usuario, Categoria, Curso, Matricula, Avaliacao, sequelize } = require('../models')
+// O Dockerfile copia database/ pra /app/database/ dentro do container,
+// entao o caminho relativo aqui aponta pra /app/src/models (../../src/models).
+const { Usuario, Categoria, Curso, Matricula, Avaliacao, sequelize } = require('../../src/models')
 
 const CATEGORIAS = [
     { nome: 'Programação', descricao: 'Linguagens, frameworks e fundamentos de desenvolvimento de software.' },

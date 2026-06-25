@@ -15,7 +15,7 @@ module.exports = {
             return
         }
         console.log('[seed] banco vazio; populando dados iniciais...')
-        const seed = require(path.join(__dirname, '..', 'src', 'seeds', 'seed'))
+        const seed = require(path.join(__dirname, '..', 'database', 'seeds', 'seed'))
         await seed()
     },
 }
