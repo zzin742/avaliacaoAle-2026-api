@@ -1,4 +1,5 @@
 require('dotenv').config()
+const os = require('node:os')
 const express = require('express')
 const swaggerUi = require('swagger-ui-express')
 
@@ -11,8 +12,14 @@ const { sequelize } = require('./src/models')
 const app = express()
 const PORT = parseInt(process.env.PORT || '3000', 10)
 
+const HOSTNAME = os.hostname()
+
 // Middlewares globais
 app.use(express.json({ limit: '1mb' }))
+app.use((req, res, next) => {
+    res.set('X-Served-By', HOSTNAME)
+    next()
+})
 app.use(logger)
 
 // Swagger UI

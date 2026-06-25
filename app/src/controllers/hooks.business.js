@@ -7,12 +7,14 @@ class RegraNegocioError extends Error {
     }
 }
 
-// matricula: aluno so se matricula a si mesmo, e o curso precisa existir e estar ativo
+// matricula: aluno so se matricula a si mesmo, em curso ativo, sempre comecando do zero
 async function matriculasBeforeCreate(req) {
     const body = { ...req.body }
 
     if (req.usuario.tipo !== 'admin') {
         body.usuario_id = req.usuario.id
+        body.progresso = 0
+        body.status = 'ativa'
     }
     if (!body.curso_id) {
         throw new RegraNegocioError('curso_id e obrigatorio')

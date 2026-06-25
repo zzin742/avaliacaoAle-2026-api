@@ -74,6 +74,7 @@ const matriculasCRUD = crudFactory(Matricula, {
         { model: Curso, as: 'curso' },
     ],
     onCreatePayload: matriculasBeforeCreate,
+    onUpdatePayload: matriculasBeforeCreate,
 })
 router.get('/matriculas', matriculasCRUD.list)
 router.get('/matriculas/:id', matriculasCRUD.get)
@@ -89,6 +90,7 @@ const avaliacoesCRUD = crudFactory(Avaliacao, {
         { model: Curso, as: 'curso' },
     ],
     onCreatePayload: avaliacoesBeforeCreate,
+    onUpdatePayload: avaliacoesBeforeCreate,
 })
 router.get('/avaliacoes', avaliacoesCRUD.list)
 router.get('/avaliacoes/:id', avaliacoesCRUD.get)

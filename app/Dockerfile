@@ -30,6 +30,10 @@ COPY --from=builder --chown=app:app /build/node_modules ./node_modules
 # Copia o codigo-fonte (camada mais mutavel - vem por ultimo)
 COPY --chown=app:app . .
 
+# Diretorio onde o segredo do JWT e persistido (montado como volume).
+# Criado com dono app para o usuario nao-root conseguir escrever.
+RUN mkdir -p /app/.secrets && chown app:app /app/.secrets
+
 USER app
 
 EXPOSE 3000

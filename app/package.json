@@ -10,7 +10,7 @@
     "migrate": "node command.js migrate",
     "migrate:undo": "node command.js migrate:undo",
     "seed": "node command.js seed",
-    "test": "node --test tests/smoke.test.js"
+    "test": "BASE_URL=${BASE_URL:-http://localhost:3000} node --test tests/smoke.test.js"
   },
   "engines": {
     "node": ">=24.0.0"

@@ -1,19 +1,32 @@
-// Segredo de desenvolvimento. NAO e um segredo de producao: serve apenas para o
-// projeto subir e funcionar localmente. Em producao, defina JWT_SECRET no .env
-// (que nao vai para o repositorio) para sobrescrever este valor.
-const DEV_FALLBACK = 'dev-secret-local-defina-JWT_SECRET-no-env-em-producao'
+const crypto = require('node:crypto')
+const fs = require('node:fs')
+const path = require('node:path')
 
-const fromEnv = process.env.JWT_SECRET
+const SECRET_DIR = process.env.JWT_SECRET_DIR || '/app/.secrets'
+const SECRET_FILE = path.join(SECRET_DIR, 'jwt_secret')
 
-// Estavel entre reinicializacoes e entre replicas: usa o valor do ambiente se
-// houver; caso contrario, o fallback fixo de desenvolvimento.
-const JWT_SECRET = fromEnv && fromEnv.trim() !== '' ? fromEnv : DEV_FALLBACK
+function carregarSegredo() {
+    const doEnv = process.env.JWT_SECRET
+    if (doEnv && doEnv.trim() !== '') return doEnv.trim()
 
-if (JWT_SECRET === DEV_FALLBACK) {
-    console.warn('[jwt] usando segredo de desenvolvimento; defina JWT_SECRET no .env para producao.')
+    try {
+        if (fs.existsSync(SECRET_FILE)) {
+            const salvo = fs.readFileSync(SECRET_FILE, 'utf8').trim()
+            if (salvo) return salvo
+        }
+    } catch (_) {}
+
+    const gerado = crypto.randomBytes(32).toString('hex')
+    try {
+        fs.mkdirSync(SECRET_DIR, { recursive: true })
+        fs.writeFileSync(SECRET_FILE, gerado, { mode: 0o600 })
+    } catch (_) {
+        console.warn('[jwt] nao foi possivel persistir o segredo; usando apenas em memoria.')
+    }
+    return gerado
 }
 
 module.exports = {
-    JWT_SECRET,
+    JWT_SECRET: carregarSegredo(),
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
 }

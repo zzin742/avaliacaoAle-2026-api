@@ -29,17 +29,18 @@ services:
       - cursos_public
       - cursos_internal
 
-  # Servico one-shot: cria as tabelas e popula na primeira subida.
-  # Roda uma vez e encerra; o app so inicia depois que ele termina com sucesso.
+  # roda uma vez (migrate + seed inicial + gera o segredo do jwt) e encerra
   migrate:
     build:
       context: ./app
       dockerfile: Dockerfile
     environment: *app-env
-    command: ["sh", "-c", "node command.js migrate && node command.js seed:if-empty"]
+    command: ["sh", "-c", "node command.js migrate && node command.js seed:if-empty && node command.js ensure-secret"]
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - app_secrets:/app/.secrets
     networks:
       - cursos_internal
     restart: "no"
@@ -57,6 +58,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+    volumes:
+      - app_secrets:/app/.secrets
     networks:
       - cursos_internal
 
@@ -104,3 +107,5 @@ volumes:
     name: cursos_postgres_data
   redis_data:
     name: cursos_redis_data
+  app_secrets:
+    name: cursos_app_secrets

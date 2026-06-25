@@ -108,6 +108,11 @@ async function seedIfEmpty() {
     await seed()
 }
 
+function ensureSecret() {
+    require('./src/config/jwt')
+    console.log('[jwt] segredo garantido')
+}
+
 async function main() {
     const cmd = process.argv[2]
     try {
@@ -115,8 +120,9 @@ async function main() {
         else if (cmd === 'migrate:undo') await migrateUndo()
         else if (cmd === 'seed') await seed()
         else if (cmd === 'seed:if-empty') await seedIfEmpty()
+        else if (cmd === 'ensure-secret') ensureSecret()
         else {
-            console.error('comandos disponiveis: migrate | migrate:undo | seed | seed:if-empty')
+            console.error('comandos disponiveis: migrate | migrate:undo | seed | seed:if-empty | ensure-secret')
             process.exit(1)
         }
     } catch (err) {

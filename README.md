@@ -41,7 +41,9 @@ Para subir em segundo plano, use `docker compose up --build -d`.
 
 ### Como funciona a inicialização
 
-O serviço `migrate` sobe antes do `app`, roda as migrations e popula o banco apenas se ele estiver vazio (`seed:if-empty`). O `app` só inicia depois que esse serviço termina com sucesso (`depends_on: service_completed_successfully`). Em reinicializações, o seed é pulado e os dados são preservados.
+O serviço `migrate` sobe antes do `app`, roda as migrations, popula o banco apenas se ele estiver vazio (`seed:if-empty`) e gera o segredo do JWT no volume. O `app` só inicia depois que esse serviço termina com sucesso (`depends_on: service_completed_successfully`). Em reinicializações, o seed é pulado e os dados são preservados.
+
+No `docker compose ps` o serviço `migrate` aparece como `Exited (0)` — isso é esperado: ele é um passo único de inicialização que roda e encerra com sucesso, não um serviço de longa duração.
 
 ### Entrypoints
 
@@ -94,11 +96,11 @@ Os dados do PostgreSQL ficam no volume nomeado `cursos_postgres_data` e os do Re
 
 Duas redes custom bridge: `cursos_public` (só o Nginx) e `cursos_internal` (Nginx, app, postgres e redis). O app, o banco e o Redis não têm portas mapeadas no host. A comunicação entre containers é feita pelo nome do serviço (`postgres:5432`, `redis:6379`), sem IPs fixos.
 
-Os serviços não usam `container_name` fixo, então o serviço `app` pode ser escalado com `docker compose up -d --scale app=3` sem conflito de nomes. Observação honesta: o `upstream app:3000` do Nginx resolve o DNS na carga da config, então o balanceamento real entre réplicas exigiria um `resolver` dinâmico (ou um load balancer de cluster, como no Swarm). Para o escopo single-host desta entrega, roda uma instância; a estrutura já não impede a escala.
+Os serviços não usam `container_name` fixo, então o `app` pode ser escalado com `docker compose up -d --scale app=3`. O Nginx usa o resolver do DNS interno do Docker (`127.0.0.11`) e re-resolve o nome `app` a cada poucos segundos, distribuindo as requisições entre as réplicas. O header `X-Served-By` na resposta mostra qual réplica respondeu, o que permite verificar o balanceamento.
 
 **Segurança**
 
-As credenciais podem ser sobrescritas por um `.env` que não vai para o repositório. O `JWT_SECRET` não é versionado: se não for definido no ambiente, a aplicação gera um segredo aleatório por sessão. O container da aplicação roda com usuário não-root. O banco e o Redis estão na rede interna e são inacessíveis diretamente pelo host. As rotas administrativas são protegidas por verificação de papel (`admin`).
+As credenciais podem ser sobrescritas por um `.env` que não vai para o repositório. O `JWT_SECRET` não fica no código: se não for definido no ambiente, é gerado aleatoriamente na primeira subida e persistido num volume (`cursos_app_secrets`), permanecendo estável entre reinicializações e compartilhado entre réplicas. O container da aplicação roda com usuário não-root. O banco e o Redis estão na rede interna e são inacessíveis diretamente pelo host. As rotas administrativas são protegidas por verificação de papel (`admin`), e PUT/DELETE de matrículas e avaliações exigem ser o dono do registro ou admin.
 
 **Cache**
 
