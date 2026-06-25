@@ -35,7 +35,7 @@ services:
       context: ./app
       dockerfile: Dockerfile
     environment: *app-env
-    command: ["sh", "-c", "for i in 1 2 3 4 5; do node command.js migrate && node command.js seed:if-empty && node command.js ensure-secret && exit 0; echo \"migrate tentativa $i falhou, retry em 3s\"; sleep 3; done; echo 'migrate falhou apos 5 tentativas'; exit 1"]
+    command: ["sh", "-c", "for i in 1 2 3 4 5; do node command.js migrate && node command.js seed:if-empty && node command.js ensure-secret && exit 0; echo \"migrate tentativa $$i falhou, retry em 3s\"; sleep 3; done; echo 'migrate falhou apos 5 tentativas'; exit 1"]
     depends_on:
       postgres:
         condition: service_healthy
