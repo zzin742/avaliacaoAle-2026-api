@@ -1,130 +1,65 @@
 /**
  * Entrypoint CLI para comandos administrativos.
- * Uso: node command.js <comando>
+ * Carrega dinamicamente todos os comandos da pasta app/Commands/.
  *
- * Comandos disponiveis:
- *   migrate         — executa as migrations pendentes
- *   migrate:undo    — desfaz a ultima migration
- *   seed            — popula o banco com dados de teste (100+ registros)
+ * Uso: node command.js <nome-do-comando>
+ *      node command.js --help    (lista os comandos disponiveis)
  */
+
 require('dotenv').config()
 const path = require('node:path')
 const fs = require('node:fs')
 const sequelize = require('./src/config/database')
 
-const MIGRATIONS_DIR = path.join(__dirname, 'src', 'migrations')
-const SEEDS_DIR = path.join(__dirname, 'src', 'seeds')
+const COMMANDS_DIR = path.join(__dirname, 'Commands')
 
-async function ensureMigrationsTable() {
-    await sequelize.query(`
-        CREATE TABLE IF NOT EXISTS _migrations (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(200) UNIQUE NOT NULL,
-            executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
-    `)
-}
+function loadCommands() {
+    const arquivos = fs
+        .readdirSync(COMMANDS_DIR)
+        .filter((f) => f.endsWith('Command.js'))
 
-async function listExecutedMigrations() {
-    const [rows] = await sequelize.query('SELECT name FROM _migrations ORDER BY id')
-    return new Set(rows.map((r) => r.name))
-}
-
-function listMigrationFiles() {
-    return fs
-        .readdirSync(MIGRATIONS_DIR)
-        .filter((f) => f.endsWith('.js'))
-        .sort()
-}
-
-async function migrate() {
-    await ensureMigrationsTable()
-    const executed = await listExecutedMigrations()
-    const files = listMigrationFiles()
-
-    const queryInterface = sequelize.getQueryInterface()
-    const { Sequelize } = require('sequelize')
-
-    let aplicadas = 0
-    for (const file of files) {
-        const migration = require(path.join(MIGRATIONS_DIR, file))
-        if (executed.has(migration.name)) {
-            console.log(`[skip] ${migration.name}`)
+    const comandos = {}
+    for (const arquivo of arquivos) {
+        const comando = require(path.join(COMMANDS_DIR, arquivo))
+        if (!comando.name || typeof comando.handle !== 'function') {
+            console.warn(`[aviso] ${arquivo} ignorado (faltando name ou handle)`)
             continue
         }
-        console.log(`[up]   ${migration.name}`)
-        await sequelize.transaction(async (t) => {
-            await migration.up(queryInterface, Sequelize, { transaction: t })
-            await sequelize.query('INSERT INTO _migrations (name) VALUES ($1)', {
-                bind: [migration.name],
-                transaction: t,
-            })
-        })
-        aplicadas++
+        comandos[comando.name] = comando
     }
-
-    console.log(`\n[ok] ${aplicadas} migration(s) aplicada(s)`)
+    return comandos
 }
 
-async function migrateUndo() {
-    await ensureMigrationsTable()
-    const [rows] = await sequelize.query('SELECT name FROM _migrations ORDER BY id DESC LIMIT 1')
-    if (!rows[0]) {
-        console.log('[ok] nada pra desfazer')
-        return
+function printHelp(comandos) {
+    console.log('Comandos disponiveis:\n')
+    const nomes = Object.keys(comandos).sort()
+    const larguraMax = Math.max(...nomes.map((n) => n.length))
+    for (const nome of nomes) {
+        const desc = comandos[nome].description || ''
+        console.log(`  ${nome.padEnd(larguraMax + 2)} ${desc}`)
     }
-    const ultima = rows[0].name
-    const file = `${ultima}.js`
-    const migration = require(path.join(MIGRATIONS_DIR, file))
-    const queryInterface = sequelize.getQueryInterface()
-
-    console.log(`[down] ${migration.name}`)
-    await sequelize.transaction(async (t) => {
-        await migration.down(queryInterface, require('sequelize').Sequelize, { transaction: t })
-        await sequelize.query('DELETE FROM _migrations WHERE name = $1', {
-            bind: [migration.name],
-            transaction: t,
-        })
-    })
-
-    console.log('[ok] migration desfeita')
-}
-
-async function seed() {
-    const seed = require(path.join(SEEDS_DIR, 'seed'))
-    await seed()
-}
-
-// Popula o banco apenas se ainda nao houver usuarios.
-// Usado no boot para nao apagar dados existentes em reinicializacoes.
-async function seedIfEmpty() {
-    const [rows] = await sequelize.query('SELECT COUNT(*)::int AS total FROM usuarios')
-    const total = rows[0].total
-    if (total > 0) {
-        console.log(`[seed] ${total} usuario(s) ja existem; pulando seed.`)
-        return
-    }
-    console.log('[seed] banco vazio; populando dados iniciais...')
-    await seed()
-}
-
-function ensureSecret() {
-    require('./src/config/jwt')
-    console.log('[jwt] segredo garantido')
 }
 
 async function main() {
-    const cmd = process.argv[2]
+    const cmdNome = process.argv[2]
+    const comandos = loadCommands()
+
+    if (!cmdNome || cmdNome === '--help' || cmdNome === '-h') {
+        printHelp(comandos)
+        await sequelize.close()
+        return
+    }
+
+    const comando = comandos[cmdNome]
+    if (!comando) {
+        console.error(`[erro] comando "${cmdNome}" nao encontrado\n`)
+        printHelp(comandos)
+        await sequelize.close()
+        process.exit(1)
+    }
+
     try {
-        if (cmd === 'migrate') await migrate()
-        else if (cmd === 'migrate:undo') await migrateUndo()
-        else if (cmd === 'seed') await seed()
-        else if (cmd === 'seed:if-empty') await seedIfEmpty()
-        else if (cmd === 'ensure-secret') ensureSecret()
-        else {
-            console.error('comandos disponiveis: migrate | migrate:undo | seed | seed:if-empty | ensure-secret')
-            process.exit(1)
-        }
+        await comando.handle()
     } catch (err) {
         console.error('[erro]', err)
         process.exit(1)
