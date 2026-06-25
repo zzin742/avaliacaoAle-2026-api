@@ -30,7 +30,7 @@ Não é necessário instalar Node.js, PostgreSQL ou Redis na máquina — tudo r
 Um único comando. As migrations e a carga inicial de dados rodam automaticamente na primeira subida (serviço `migrate`), então não há passo manual.
 
 ```bash
-git clone https://github.com/rafadical/avaliacaoAle-2026-api.git
+git clone https://github.com/zzin742/avaliacaoAle-2026-api.git
 cd avaliacaoAle-2026-api
 docker compose up --build
 ```
