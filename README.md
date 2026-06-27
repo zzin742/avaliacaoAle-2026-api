@@ -12,6 +12,11 @@ Avaliação Prática do 2º Bimestre 2026 — UniFAAT — Análise e Desenvolvim
 | 6325072 | Leandro Duarte Gulias |
 | 6322006 | Rafael Nogueira Maruca |
 
+## Entregáveis
+
+- **Vídeo da apresentação:** https://drive.google.com/file/d/1YXAb8yGXYdnMshgkYA6PSpXtDQjatDXz/view?usp=sharing
+- **Evidências (capturas de tela):** [`evidencias/`](evidencias/)
+
 ## Sobre o projeto
 
 API REST de uma plataforma de cursos online com autenticação JWT. Permite cadastrar usuários, criar cursos por categoria, matricular alunos e registrar avaliações.

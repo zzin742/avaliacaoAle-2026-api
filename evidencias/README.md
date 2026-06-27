@@ -8,8 +8,10 @@ Capturas e gravação do projeto rodando.
 
 ## Vídeo
 
-Hospedado no Google Drive (excede o limite de 100 MB por arquivo do GitHub).
+Gravação da apresentação do projeto rodando (aproximadamente 8 minutos).
 
-**Link:** _adicionar URL do Drive aqui_
+Hospedado no Google Drive (o arquivo de ~550 MB excede o limite de 100 MB por arquivo do GitHub).
 
-> Antes de compartilhar o link com o professor, garanta que a permissão do arquivo no Drive esteja como **"Qualquer pessoa com o link pode visualizar"**.
+**Link:** https://drive.google.com/file/d/1YXAb8yGXYdnMshgkYA6PSpXtDQjatDXz/view?usp=sharing
+
+Permissão configurada como "Qualquer pessoa com o link pode visualizar".
